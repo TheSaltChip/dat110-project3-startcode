@@ -28,6 +28,14 @@ class DHTTestHashFunction {
         BigInteger hash4 = Hash.hashOf("process4");
         BigInteger hash5 = Hash.hashOf("process5");
 
+        System.out.println(
+                "hash1           " + hash1 + "\n"
+                        + "hash2           " + hash2 + "\n"
+                        + "hash3           " + hash3 + "\n"
+                        + "hash4           " + hash4 + "\n"
+                        + "hash5           " + hash5 + "\n"
+        + "Address size: = " + Hash.addressSize());
+
         // expected
         BigInteger hash1expected = new BigInteger("53937554629190552131995290006614509577");
         BigInteger hash2expected = new BigInteger("15618062003214643351512781541041391612");
@@ -44,8 +52,8 @@ class DHTTestHashFunction {
     }
 
     @Test
-    void test1(){
-        Hash.hashOf("process2");
+    void test1() {
+        Hash.hashOf("process4");
         assertEquals(BigInteger.valueOf(2L).pow(128), Hash.addressSize());
     }
 

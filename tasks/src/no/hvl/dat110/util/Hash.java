@@ -15,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 public class Hash {
 
     private static BigInteger hashint;
+    private static int digestLength;
 
     public static BigInteger hashOf(String entity) {
 
@@ -39,6 +40,7 @@ public class Hash {
             return null;
         }
 
+        digestLength = md.getDigestLength();
         return (hashint = new BigInteger(toHex(md.digest(entity.getBytes(StandardCharsets.UTF_8))), 16));
     }
 
@@ -58,8 +60,7 @@ public class Hash {
 
     public static int bitSize() {
         // find the digest length
-        String hex = String.format("%32s", hashint.toString(16)).replaceAll(" ", "0");
-        return DatatypeConverter.parseHexBinary(hex).length * 8;
+        return digestLength * 8;
     }
 
     public static String toHex(byte[] digest) {

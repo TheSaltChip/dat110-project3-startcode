@@ -9,7 +9,7 @@ import no.hvl.dat110.util.Util;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -22,11 +22,11 @@ public class MutualExclusion {
     /** lock variables */
     private boolean CS_BUSY = false;                        // indicate to be in critical section (accessing a shared resource)
     private boolean WANTS_TO_ENTER_CS = false;                // indicate to want to enter CS
-    private List<Message> queueack;                        // queue for acknowledged messages
-    private List<Message> mutexqueue;                        // queue for storing process that are denied permission. We really don't need this for quorum-protocol
+    private final List<Message> queueack;                        // queue for acknowledged messages
+    private final List<Message> mutexqueue;                        // queue for storing process that are denied permission. We really don't need this for quorum-protocol
 
-    private LamportClock clock;                                // lamport clock
-    private Node node;
+    private final LamportClock clock;                                // lamport clock
+    private final Node node;
 
     public MutualExclusion(Node node) throws RemoteException {
         this.node = node;
@@ -83,22 +83,16 @@ public class MutualExclusion {
 
         // return permission
 
-        Set<Message> nonDup = removeDuplicatePeersBeforeVoting();
-        node.activenodesforfile.forEach(m -> System.out.println(m.getNodeIP()));
+        List<Message> nonDup = removeDuplicatePeersBeforeVoting();
 
-        multicastMessage(message, new ArrayList<>(nonDup));
-        System.out.println(nonDup.size());
+        multicastMessage(message, nonDup);
 
-        if (areAllMessagesReturned(nonDup.size()) && WANTS_TO_ENTER_CS) {
-            node.acquireLock();
-
+        if (areAllMessagesReturned(nonDup.size())) {
+            acquireLock();
             node.broadcastUpdatetoPeers(updates);
-
             mutexqueue.clear();
-
             return true;
         }
-
         return false;
     }
 
@@ -111,11 +105,10 @@ public class MutualExclusion {
 
         // call onMutexRequestReceived()
 
-        for (Message m :
-                activenodes) {
-            NodeInterface stub = Util.getProcessStub(m.getNodeIP(), m.getPort());
+        Collections.shuffle(activenodes);
 
-            stub.onMutexRequestReceived(message);
+        for (Message m : activenodes) {
+            Util.getProcessStub(m.getNodeIP(), m.getPort()).onMutexRequestReceived(message);
         }
 
     }
@@ -126,9 +119,10 @@ public class MutualExclusion {
         clock.increment();
         // if message is from self, acknowledge, and call onMutexAcknowledgementReceived()
 
-        if (message.getNodeID().equals(node.getNodeID()) && !message.isAcknowledged()) {
+        if (message.getNodeID().equals(node.getNodeID())) {
             message.setAcknowledged(true);
-            node.onMutexAcknowledgementReceived(message);
+            onMutexAcknowledgementReceived(message);
+            return;
         }
 
         int caseid = -1;
@@ -138,14 +132,9 @@ public class MutualExclusion {
         // caseid=1: Receiver already has access to the resource (dont reply but queue the request)
         // caseid=2: Receiver wants to access resource but is yet to - compare own message clock to received message's clock
 
-        if (!WANTS_TO_ENTER_CS)
-            caseid = 0;
-        else if (CS_BUSY)
-            caseid = 1;
-        else if (WANTS_TO_ENTER_CS)
-            caseid = 2;
-
-        System.out.println("Case id " + caseid);
+        if (!WANTS_TO_ENTER_CS && !CS_BUSY) caseid = 0;
+        else if (CS_BUSY) caseid = 1;
+        else caseid = 2;
 
         // check for decision
         doDecisionAlgorithm(message, mutexqueue, caseid);
@@ -188,19 +177,16 @@ public class MutualExclusion {
                 // if clocks are the same, compare nodeIDs, the lowest wins
                 // if sender wins, acknowledge the message, obtain a stub and call onMutexAcknowledgementReceived()
                 // if sender looses, queue it
-
-                if (clock.getClock() < message.getClock()
-                        || (clock.getClock() == message.getClock()
+                if (node.getMessage().getClock() < message.getClock()
+                        || (node.getMessage().getClock() == message.getClock()
                         && node.getNodeID().compareTo(message.getNodeID()) < 0)) {
                     queue.add(message);
-                    System.out.println("IF");
                     break;
                 }
-                System.out.println("TEST");
-                if (!message.isAcknowledged()) {
-                    message.setAcknowledged(true);
-                    Util.getProcessStub(message.getNodeIP(), message.getPort()).onMutexAcknowledgementReceived(message);
-                }
+
+                message.setAcknowledged(true);
+                Util.getProcessStub(message.getNodeIP(), message.getPort()).onMutexAcknowledgementReceived(message);
+
                 break;
             }
 
@@ -241,17 +227,15 @@ public class MutualExclusion {
 
         // return true if yes and false if no
 
-        boolean cond = queueack.size() == numvoters;
-        queueack.forEach(m -> System.out.println(m.getNodeIP()));
-        System.out.println(queueack.size());
+        boolean cond = queueack.stream().filter(Message::isAcknowledged).count() == numvoters;
         queueack.clear();
 
         return cond;
     }
 
-    private Set<Message> removeDuplicatePeersBeforeVoting() {
+    private List<Message> removeDuplicatePeersBeforeVoting() {
 
-        Set<Message> uniquepeer = new HashSet<>();
+        List<Message> uniquepeer = new ArrayList<>();
         for (Message p : node.activenodesforfile) {
             boolean found = false;
             for (Message p1 : uniquepeer) {

@@ -17,7 +17,6 @@ public class LamportClock implements Serializable {
 	
 	
 	public void increment() {
-		
 		clock++;
 	}
 	

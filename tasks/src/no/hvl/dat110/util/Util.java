@@ -10,14 +10,11 @@ package no.hvl.dat110.util;
 import no.hvl.dat110.middleware.Node;
 import no.hvl.dat110.rpc.interfaces.NodeInterface;
 
-import javax.xml.bind.DatatypeConverter;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.text.Bidi;
 import java.util.*;
 
 public class Util {
@@ -37,22 +34,17 @@ public class Util {
      * @return true if (lower <= id <= upper) or false otherwise
      */
     public static boolean computeLogic(BigInteger id, BigInteger lower, BigInteger upper) {
-
         // a formula to check whether an id falls within the set {lower, upper} using the address size as our bound (modulos operation)
         // it modifies 'upper' and 'id' when lower > upper e.g. set (6, 2) in mod 10 = {6, 7, 8, 9, 0, 1, 2}
 
         // implement: read the descriptions above
 
         // 6 7 8 9 0 1 2
-        if (lower.compareTo(upper) > 0) {
+        if (lower.compareTo(upper) > 0)
             return id.compareTo(lower) >= 0 || id.compareTo(upper) <= 0;
-        }
 
-        if (lower.compareTo(upper) < 0) {
-            return id.compareTo(lower) >= 0 && id.compareTo(upper) <= 0;
-        }
 
-        return true;
+        return id.compareTo(lower) >= 0 && id.compareTo(upper) <= 0;
     }
 
     public static List<String> toString(List<NodeInterface> list) throws RemoteException {

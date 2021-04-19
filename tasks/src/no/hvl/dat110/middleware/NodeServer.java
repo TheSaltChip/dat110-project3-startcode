@@ -1,5 +1,6 @@
 package no.hvl.dat110.middleware;
 
+import java.lang.management.ManagementFactory;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -74,12 +75,13 @@ public class NodeServer {
 			@Override 
 			public void run() {
 				while(true) {
+
 					protocols.updateSuccessor();
 					protocols.stabilizeRing();
 					protocols.fixFingerTable();
 					protocols.checkPredecessor();
 					protocols.printInfo();
-					
+					System.out.println("Node name: " + nodename + " threads: " + ManagementFactory.getThreadMXBean().getThreadCount());
 					try {
 						Thread.sleep(5000);
 					} catch (InterruptedException e) {

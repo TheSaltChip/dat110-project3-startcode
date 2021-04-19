@@ -79,7 +79,7 @@ class DHTTestMutex {
         assertArrayEquals(e.toArray(), replies.toArray());
     }
 
-    class FileUpdater extends Thread {
+    static class FileUpdater extends Thread {
 
         boolean reply;
         NodeInterface node;
@@ -110,15 +110,12 @@ class DHTTestMutex {
 
     private Message getPeerMessage(Set<Message> activenodes, String peer) {
 
-        Message pmsg = null;
-        Iterator<Message> it = activenodes.iterator();
-        while (it.hasNext()) {
-            Message n = it.next();
+        for (Message n : activenodes) {
             if (n.getNodeIP().equals(peer))
                 return n;
         }
 
-        return pmsg;
+        return null;
     }
 
 }
