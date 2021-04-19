@@ -24,7 +24,7 @@ public class FileDistributorClient {
 	
 	public static void doDistribute() throws NoSuchAlgorithmException, IOException {
 		// use this node to distribute files to active peers
-		String path = "tests/files/";														// absolute path to the files
+		String path = "files/";														// absolute path to the files
 		String[] files = {"file1.txt","file2.txt","file3.txt","file4.txt","file5.txt"}; // we just limit to 5 files
 		
 		String node1 = "process1";														// this is the peer we want to use to resolve and distribute files
